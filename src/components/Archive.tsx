@@ -5,9 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Archive = () => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
+  const [playerOpen, setPlayerOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<number | null>(null);
 
   const archives = [
     {
@@ -61,6 +66,37 @@ const Archive = () => {
       status: 'ready'
     }
   ];
+
+  const handlePlay = (id: number) => {
+    setSelectedVideo(id);
+    setPlayerOpen(true);
+    const video = archives.find(a => a.id === id);
+    toast({
+      title: 'Воспроизведение',
+      description: `Воспроизводится: ${video?.title}`
+    });
+  };
+
+  const handleDownload = (id: number) => {
+    const video = archives.find(a => a.id === id);
+    toast({
+      title: 'Загрузка начата',
+      description: `Скачивание: ${video?.title} (${video?.size})`
+    });
+  };
+
+  const handleShare = (id: number) => {
+    const video = archives.find(a => a.id === id);
+    const shareUrl = `https://cloud-playout.example.com/archive/${id}`;
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: 'Ссылка скопирована',
+        description: shareUrl
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -129,15 +165,27 @@ const Archive = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Button 
+                      size="sm" 
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      onClick={() => handlePlay(archive.id)}
+                    >
                       <Icon name="Play" size={14} className="mr-1" />
                       Воспроизвести
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleDownload(archive.id)}
+                    >
                       <Icon name="Download" size={14} className="mr-1" />
                       Скачать
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleShare(archive.id)}
+                    >
                       <Icon name="Share2" size={14} className="mr-1" />
                       Поделиться
                     </Button>
@@ -166,6 +214,25 @@ const Archive = () => {
           </Button>
         </div>
       </div>
+
+      <Dialog open={playerOpen} onOpenChange={setPlayerOpen}>
+        <DialogContent className="bg-card border-border max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">
+              {selectedVideo && archives.find(a => a.id === selectedVideo)?.title}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {selectedVideo && archives.find(a => a.id === selectedVideo)?.quality} • {selectedVideo && archives.find(a => a.id === selectedVideo)?.duration}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="aspect-video bg-black rounded-lg flex items-center justify-center">
+            <div className="text-center text-white">
+              <Icon name="Play" size={64} className="mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground">Видеоплеер (демо)</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

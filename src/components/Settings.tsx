@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 const Settings = () => {
   const { toast } = useToast();
   const [isResetting, setIsResetting] = useState(false);
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   
   const users = [
     { id: 1, name: 'Иван Петров', role: 'Администратор', email: 'ivan@example.com', status: 'active' },
@@ -20,6 +21,35 @@ const Settings = () => {
     { id: 3, name: 'Алексей Смирнов', role: 'Оператор', email: 'alexey@example.com', status: 'active' },
     { id: 4, name: 'Елена Козлова', role: 'Наблюдатель', email: 'elena@example.com', status: 'inactive' }
   ];
+
+  const handleSaveSettings = () => {
+    toast({
+      title: 'Настройки сохранены',
+      description: 'Все изменения применены'
+    });
+  };
+
+  const handleAddUser = () => {
+    toast({
+      title: 'Пользователь добавлен',
+      description: 'Новый пользователь создан'
+    });
+  };
+
+  const handleDeleteUser = (name: string) => {
+    toast({
+      title: 'Пользователь удалён',
+      description: `${name} удалён из системы`,
+      variant: 'destructive'
+    });
+  };
+
+  const handleConnectIntegration = (platform: string) => {
+    toast({
+      title: 'Подключение к ' + platform,
+      description: 'Открывается окно авторизации...'
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -143,7 +173,10 @@ const Settings = () => {
         <TabsContent value="users" className="space-y-4">
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground">Управление доступом пользователей</p>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button 
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={handleAddUser}
+            >
               <Icon name="UserPlus" size={16} className="mr-2" />
               Добавить пользователя
             </Button>
@@ -171,10 +204,18 @@ const Settings = () => {
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => toast({ title: 'Редактирование', description: `Редактирование ${user.name}` })}
+                        >
                           <Icon name="Edit" size={14} />
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleDeleteUser(user.name)}
+                        >
                           <Icon name="Trash2" size={14} />
                         </Button>
                       </div>
@@ -234,7 +275,12 @@ const Settings = () => {
                     <p className="text-sm text-muted-foreground">Мультитрансляция на YouTube</p>
                   </div>
                 </div>
-                <Button variant="outline">Подключить</Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => handleConnectIntegration('YouTube')}
+                >
+                  Подключить
+                </Button>
               </div>
 
               <div className="flex items-center justify-between p-4 border border-border rounded-lg">
@@ -247,7 +293,12 @@ const Settings = () => {
                     <p className="text-sm text-muted-foreground">Стриминг на Twitch</p>
                   </div>
                 </div>
-                <Button variant="outline">Подключить</Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => handleConnectIntegration('Twitch')}
+                >
+                  Подключить
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -345,8 +396,16 @@ const Settings = () => {
       </Tabs>
 
       <div className="flex justify-end gap-2 pt-4">
-        <Button variant="outline">Отмена</Button>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button 
+          variant="outline"
+          onClick={() => toast({ title: 'Отмена', description: 'Изменения отменены' })}
+        >
+          Отмена
+        </Button>
+        <Button 
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={handleSaveSettings}
+        >
           <Icon name="Save" size={16} className="mr-2" />
           Сохранить изменения
         </Button>

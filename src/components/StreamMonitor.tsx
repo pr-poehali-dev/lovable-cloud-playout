@@ -1,11 +1,21 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const StreamMonitor = () => {
-  const streams = [
+  const { toast } = useToast();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selectedStream, setSelectedStream] = useState<number | null>(null);
+  
+  const [streams, setStreams] = useState([
     {
       id: 1,
       name: 'Main Channel HD',
@@ -56,7 +66,35 @@ const StreamMonitor = () => {
       quality: 0,
       rtmp: 'rtmp://live.example.com/stream5'
     }
-  ];
+  ]);
+
+  const handleStartStream = (id: number) => {
+    setStreams(streams.map(s => 
+      s.id === id ? { ...s, status: 'online', bitrate: 4500, viewers: 0, uptime: '00:00:00', quality: 100 } : s
+    ));
+    const stream = streams.find(s => s.id === id);
+    toast({
+      title: 'Поток запущен',
+      description: `${stream?.name} в эфире`
+    });
+  };
+
+  const handleStopStream = (id: number) => {
+    setStreams(streams.map(s => 
+      s.id === id ? { ...s, status: 'offline', bitrate: 0, viewers: 0, uptime: '00:00:00', quality: 0 } : s
+    ));
+    const stream = streams.find(s => s.id === id);
+    toast({
+      title: 'Поток остановлен',
+      description: `${stream?.name} оффлайн`,
+      variant: 'destructive'
+    });
+  };
+
+  const handleOpenSettings = (id: number) => {
+    setSelectedStream(id);
+    setSettingsOpen(true);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -137,21 +175,38 @@ const StreamMonitor = () => {
               <div className="flex gap-2">
                 {stream.status === 'online' ? (
                   <>
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => handleStopStream(stream.id)}
+                    >
                       <Icon name="Pause" size={14} className="mr-1" />
                       Стоп
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleOpenSettings(stream.id)}
+                    >
                       <Icon name="Settings" size={14} />
                     </Button>
                   </>
                 ) : (
                   <>
-                    <Button size="sm" className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Button 
+                      size="sm" 
+                      className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                      onClick={() => handleStartStream(stream.id)}
+                    >
                       <Icon name="Play" size={14} className="mr-1" />
                       Запуск
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleOpenSettings(stream.id)}
+                    >
                       <Icon name="Settings" size={14} />
                     </Button>
                   </>
@@ -161,6 +216,60 @@ const StreamMonitor = () => {
           </CardContent>
         </Card>
       ))}
+
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Настройки потока</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {selectedStream && streams.find(s => s.id === selectedStream)?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="stream-name" className="text-foreground">Название</Label>
+              <Input
+                id="stream-name"
+                defaultValue={selectedStream ? streams.find(s => s.id === selectedStream)?.name : ''}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rtmp-url" className="text-foreground">RTMP URL</Label>
+              <Input
+                id="rtmp-url"
+                defaultValue={selectedStream ? streams.find(s => s.id === selectedStream)?.rtmp : ''}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quality" className="text-foreground">Качество</Label>
+              <Select defaultValue="1080p">
+                <SelectTrigger id="quality">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2160p">4K (2160p)</SelectItem>
+                  <SelectItem value="1080p">Full HD (1080p)</SelectItem>
+                  <SelectItem value="720p">HD (720p)</SelectItem>
+                  <SelectItem value="480p">SD (480p)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                toast({
+                  title: 'Настройки сохранены',
+                  description: 'Параметры потока обновлены'
+                });
+                setSettingsOpen(false);
+              }}
+            >
+              <Icon name="Save" size={16} className="mr-2" />
+              Сохранить
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

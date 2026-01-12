@@ -108,6 +108,55 @@ const Playlist = () => {
     });
   };
 
+  const handleSkipNext = (currentId: number) => {
+    const currentIndex = playlist.findIndex(item => item.id === currentId);
+    const nextItem = playlist[currentIndex + 1];
+    
+    setPlaylist(playlist.map((item, index) => {
+      if (item.id === currentId) return { ...item, status: 'completed' };
+      if (index === currentIndex + 1) return { ...item, status: 'playing' };
+      return item;
+    }));
+
+    toast({
+      title: 'Переключено',
+      description: nextItem ? `Сейчас в эфире: ${nextItem.title}` : 'Плейлист завершён'
+    });
+  };
+
+  const handleStop = (id: number) => {
+    setPlaylist(playlist.map(item => 
+      item.id === id ? { ...item, status: 'scheduled' } : item
+    ));
+    toast({
+      title: 'Эфир остановлен',
+      description: 'Трансляция приостановлена',
+      variant: 'destructive'
+    });
+  };
+
+  const handleImport = () => {
+    toast({
+      title: 'Импорт плейлиста',
+      description: 'Выберите JSON файл с плейлистом'
+    });
+  };
+
+  const handleExport = () => {
+    const dataStr = JSON.stringify(playlist, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `playlist_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    toast({
+      title: 'Плейлист экспортирован',
+      description: 'Файл сохранён'
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -185,11 +234,11 @@ const Playlist = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-foreground">Плейлист</CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleImport}>
                 <Icon name="Upload" size={16} className="mr-2" />
                 Импорт
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleExport}>
                 <Icon name="Download" size={16} className="mr-2" />
                 Экспорт
               </Button>
@@ -247,11 +296,20 @@ const Playlist = () => {
 
                   {item.status === 'playing' && (
                     <div className="flex gap-2 mt-3">
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleSkipNext(item.id)}
+                      >
                         <Icon name="SkipForward" size={14} className="mr-1" />
                         След. элемент
                       </Button>
-                      <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleStop(item.id)}
+                      >
                         <Icon name="Square" size={14} className="mr-1" />
                         Стоп
                       </Button>
