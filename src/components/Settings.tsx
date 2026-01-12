@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,8 +7,13 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
+  const { toast } = useToast();
+  const [isResetting, setIsResetting] = useState(false);
+  
   const users = [
     { id: 1, name: 'Иван Петров', role: 'Администратор', email: 'ivan@example.com', status: 'active' },
     { id: 2, name: 'Мария Сидорова', role: 'Оператор', email: 'maria@example.com', status: 'active' },
@@ -39,6 +45,10 @@ const Settings = () => {
           <TabsTrigger value="integration">
             <Icon name="Plug" size={16} className="mr-2" />
             Интеграции
+          </TabsTrigger>
+          <TabsTrigger value="system">
+            <Icon name="Server" size={16} className="mr-2" />
+            Система
           </TabsTrigger>
         </TabsList>
 
@@ -238,6 +248,96 @@ const Settings = () => {
                   </div>
                 </div>
                 <Button variant="outline">Подключить</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="system" className="space-y-4">
+          <Card className="bg-card border-border border-destructive">
+            <CardHeader>
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <Icon name="AlertTriangle" size={20} />
+                Опасная зона
+              </CardTitle>
+              <CardDescription>
+                Необратимые действия с системой. Будьте осторожны!
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <div>
+                  <h3 className="font-semibold text-foreground">Полный сброс системы</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Удалит все потоки, плейлисты, архив и настройки. Система вернётся к начальному состоянию.
+                  </p>
+                  <p className="text-xs text-destructive font-semibold mt-2">
+                    ⚠️ Это действие нельзя отменить!
+                  </p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="ml-4">
+                      <Icon name="RotateCcw" size={16} className="mr-2" />
+                      Сбросить систему
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-card border-border">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-destructive flex items-center gap-2">
+                        <Icon name="AlertTriangle" size={24} />
+                        Подтвердите сброс системы
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="text-foreground">
+                        Вы действительно хотите сбросить всю систему?
+                        <br /><br />
+                        Это удалит:
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          <li>Все RTMP потоки и их настройки</li>
+                          <li>Весь плейлист и расписание</li>
+                          <li>Архив записей</li>
+                          <li>Пользователей и права доступа</li>
+                          <li>Все конфигурации и интеграции</li>
+                        </ul>
+                        <br />
+                        <span className="text-destructive font-semibold">
+                          Восстановить данные будет невозможно!
+                        </span>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Отмена</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          setIsResetting(true);
+                          setTimeout(() => {
+                            toast({
+                              title: 'Система сброшена',
+                              description: 'Все данные удалены. Система перезагружается...',
+                              variant: 'destructive'
+                            });
+                            setTimeout(() => {
+                              window.location.reload();
+                            }, 2000);
+                          }, 1000);
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isResetting ? (
+                          <>
+                            <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                            Сброс...
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="Trash2" size={16} className="mr-2" />
+                            Да, сбросить всё
+                          </>
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </CardContent>
           </Card>

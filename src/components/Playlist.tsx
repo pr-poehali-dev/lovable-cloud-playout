@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 const Playlist = () => {
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoStartTime, setVideoStartTime] = useState('');
+  
   const [playlist, setPlaylist] = useState([
     { id: 1, title: 'Утренний эфир', duration: '03:00:00', status: 'completed', startTime: '06:00', type: 'live' },
     { id: 2, title: 'Новости', duration: '00:30:00', status: 'completed', startTime: '09:00', type: 'video' },
@@ -39,6 +49,65 @@ const Playlist = () => {
     return type === 'live' ? 'Radio' : 'Film';
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith('video/')) {
+        setUploadedFile(file);
+        setVideoTitle(file.name.replace(/\.[^/.]+$/, ''));
+        toast({
+          title: 'Файл выбран',
+          description: `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} МБ)`
+        });
+      } else {
+        toast({
+          title: 'Ошибка',
+          description: 'Пожалуйста, выберите видеофайл',
+          variant: 'destructive'
+        });
+      }
+    }
+  };
+
+  const handleUploadVideo = () => {
+    if (!uploadedFile || !videoTitle || !videoStartTime) {
+      toast({
+        title: 'Ошибка',
+        description: 'Заполните все поля',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const newVideo = {
+      id: playlist.length + 1,
+      title: videoTitle,
+      duration: '00:00:00',
+      status: 'scheduled',
+      startTime: videoStartTime,
+      type: 'video'
+    };
+
+    setPlaylist([...playlist, newVideo]);
+    toast({
+      title: 'Видео добавлено',
+      description: `${videoTitle} добавлено в плейлист`
+    });
+
+    setUploadDialogOpen(false);
+    setUploadedFile(null);
+    setVideoTitle('');
+    setVideoStartTime('');
+  };
+
+  const handleDeleteItem = (id: number) => {
+    setPlaylist(playlist.filter(item => item.id !== id));
+    toast({
+      title: 'Удалено',
+      description: 'Элемент удалён из плейлиста'
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -46,10 +115,69 @@ const Playlist = () => {
           <h2 className="text-2xl font-bold text-foreground">Расписание эфира</h2>
           <p className="text-muted-foreground">Сегодня, 12 января 2026</p>
         </div>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Icon name="Plus" size={16} className="mr-2" />
-          Добавить элемент
-        </Button>
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Icon name="Upload" size={16} className="mr-2" />
+              Загрузить видео
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-card border-border">
+            <DialogHeader>
+              <DialogTitle className="text-foreground">Загрузка видео в плейлист</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Выберите видеофайл и укажите время начала
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="video-file" className="text-foreground">Видеофайл</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  id="video-file"
+                  accept="video/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Icon name="Upload" size={16} className="mr-2" />
+                  {uploadedFile ? uploadedFile.name : 'Выбрать файл'}
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="video-title" className="text-foreground">Название</Label>
+                <Input
+                  id="video-title"
+                  value={videoTitle}
+                  onChange={(e) => setVideoTitle(e.target.value)}
+                  placeholder="Название видео"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="start-time" className="text-foreground">Время начала</Label>
+                <Input
+                  id="start-time"
+                  type="time"
+                  value={videoStartTime}
+                  onChange={(e) => setVideoStartTime(e.target.value)}
+                />
+              </div>
+              <Button
+                onClick={handleUploadVideo}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Icon name="Plus" size={16} className="mr-2" />
+                Добавить в плейлист
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card className="bg-card border-border">
@@ -136,7 +264,11 @@ const Playlist = () => {
                         <Icon name="Edit" size={14} className="mr-1" />
                         Изменить
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleDeleteItem(item.id)}
+                      >
                         <Icon name="Trash2" size={14} className="mr-1" />
                         Удалить
                       </Button>
